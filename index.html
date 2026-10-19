@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Tool Đổi Tên CSV Nhanh Gọn</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, sans-serif;
+            background: #f1f5f9;
+            margin: 0;
+            padding: 15px;
+            color: #1e293b;
+        }
+        /* Thanh điều khiển gọn trên 1 hàng */
+        .toolbar {
+            background: #ffffff;
+            padding: 14px 18px;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: flex-end;
+            gap: 14px;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+            border-left: 5px solid #2563eb;
+        }
+        .field {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .field label {
+            font-size: 12px;
+            font-weight: 600;
+            color: #475569;
+        }
+        .field input, .field select {
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            font-size: 13px;
+        }
+        .btn {
+            padding: 9px 18px;
+            border: none;
+            border-radius: 5px;
+            font-weight: 600;
+            font-size: 13px;
+            cursor: pointer;
+            color: #fff;
+            background: #16a34a;
+        }
+        .btn:hover { background: #15803d; }
+        .btn:disabled { background: #94a3b8; cursor: not-allowed; }
+
+        /* Bảng dữ liệu chuẩn Excel */
+        .table-wrap {
+            background: #fff;
+            border: 1px solid #cbd5e1;
+            border-radius: 6px;
+            overflow: auto;
+            max-height: 78vh;
+        }
+        table {
+            border-collapse: collapse;
+            font-size: 12px;
+            width: max-content;
+            min-width: 100%;
+        }
+        th {
+            background: #e2e8f0;
+            padding: 8px 10px;
+            border: 1px solid #cbd5e1;
+            position: sticky;
+            top: 0;
+            z-index: 5;
+            text-align: left;
+            white-space: nowrap;
+        }
+        td {
+            padding: 4px 8px;
+            border: 1px solid #e2e8f0;
+            white-space: nowrap;
+        }
+        tr:hover td { background: #f8fafc; }
+        .edit-id {
+            width: 240px;
+            padding: 4px 6px;
+            border: 1px solid #2563eb;
+            border-radius: 3px;
+            font-family: Consolas, monospace;
+            font-weight: 600;
+            color: #1e3a8a;
+            background: #eff6ff;
+        }
+        .edit-id.err {
+            border-color: #dc2626;
+            background: #fee2e2;
+            color: #991b1b;
+        }
+        .edit-sub {
+            width: 120px;
+            padding: 4px 6px;
+            border: 1px solid transparent;
+            background: transparent;
+            font-size: 12px;
+        }
+        .edit-sub:focus {
+            border: 1px solid #2563eb;
+            background: #fff;
+            outline: none;
+        }
+        .hl { background: #fef08a !important; }
+        #msg {
+            font-size: 13px;
+            margin-bottom: 10px;
+            font-weight: 600;
+            color: #15803d;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- THANH CÔNG CỤ DUY NHẤT -->
+    <div class="toolbar">
+        <div class="field">
+            <label>1. Chọn file CSV:</label>
+            <input type="file" id="csvFile" accept=".csv">
+        </div>
+
+        <div class="field">
+            <label>2. Kiểu đặt tên Point ID:</label>
+            <select id="mode" onchange="process()">
+                <option value="gcp">Đặt tên GCP (GCP_PQNN_..._diem1_base)</option>
+                <option value="num">Đánh lại số gọn (1, 2, 3... liên tục)</option>
+            </select>
+        </div>
+
+        <div class="field" id="prefixBox">
+            <label>3. Tiền tố (Sửa ngày/khu vực tại đây):</label>
+            <input type="text" id="prefix" value="GCP_PQN_bs261019_C_diem" style="width: 230px;" oninput="process()">
+        </div>
+
+        <div class="field">
+            <label>4. Tên file xuất ra:</label>
+            <input type="text" id="outName" value="3-ktqn19-10-26.csv" style="width: 170px;">
+        </div>
+
+        <button class="btn" id="btnExport" onclick="exportCSV()" disabled>Tải File CSV</button>
+    </div>
+
+    <div id="msg"></div>
+    <div id="encNote" style="font-size:12px;color:#475569;margin-bottom:8px;"></div>
+
+    <!-- BẢNG XEM TRƯỚC & SỬA TRỰC TIẾP -->
+    <div class="table-wrap">
+        <table>
+            <thead id="thead">
+                <tr>
+                    <th>Point ID</th><th>Tên điểm</th><th>Hình ảnh</th><th>Mã</th><th>N</th><th>E</th><th>H</th>
+                </tr>
+            </thead>
+            <tbody id="tbody">
+                <tr>
+                    <td colspan="7" style="text-align:center; padding: 40px; color:#64748b;">
+                        📂 Hãy chọn file CSV ở mục số 1 để tự động xử lý...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+<script>
+    let rawHeaders = [], rawRows = [];
+    let finalHeaders = [], finalRows = [];
+
+    document.getElementById('csvFile').addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (!file) return;
+        document.getElementById('outName').value = file.name.startsWith("3-") ? file.name : "3-" + file.name;
+
+        const reader = new FileReader();
+        reader.onload = function() {
+            const { text, enc } = decodeBuffer(reader.result);
+            const res = Papa.parse(text, { header: false, skipEmptyLines: true });
+            if (res.data.length < 2) return alert("File trống!");
+            rawHeaders = res.data[0].map(h => h.replace(/^\uFEFF/, '').trim());
+            rawRows = res.data.slice(1);
+
+            // Cảnh báo nếu file gốc đã mất ký tự (dấu ? hoặc  )
+            const lost = rawHeaders.filter(h => /[?\uFFFD]/.test(h)).length;
+            document.getElementById('encNote').innerHTML =
+                `Mã hóa nhận diện: <b>${enc}</b>` +
+                (lost ? ` — ⚠️ ${lost} tiêu đề cột trong file gốc đã bị mất dấu (hiện dấu ?). Lỗi này nằm sẵn trong file gốc, hãy xuất lại file gốc ở dạng UTF-8 nếu thiết bị cho phép.` : '');
+
+            document.getElementById('btnExport').disabled = false;
+            process();
+        };
+        reader.readAsArrayBuffer(file);
+    });
+
+    // Tự nhận diện mã hóa: UTF-16 -> UTF-8 -> Windows-1258 (tiếng Việt) -> Windows-1252
+    function decodeBuffer(buf) {
+        const b = new Uint8Array(buf);
+        if (b[0] === 0xFF && b[1] === 0xFE) return { text: new TextDecoder('utf-16le').decode(buf), enc: 'UTF-16' };
+        try {
+            return { text: new TextDecoder('utf-8', { fatal: true }).decode(buf), enc: 'UTF-8' };
+        } catch (e) {}
+        try {
+            return { text: new TextDecoder('windows-1258').decode(buf), enc: 'Windows-1258 (ANSI tiếng Việt)' };
+        } catch (e) {
+            return { text: new TextDecoder('windows-1252').decode(buf), enc: 'Windows-1252' };
+        }
+    }
+
+    function process() {
+        if (!rawRows.length) return;
+        const mode = document.getElementById('mode').value;
+        const prefix = document.getElementById('prefix').value.trim();
+        document.getElementById('prefixBox').style.display = (mode === 'gcp') ? 'flex' : 'none';
+
+        let headers = [...rawHeaders];
+        let rows = rawRows.map(r => [...r]);
+
+        // Tự động chuẩn hóa cột: Point ID (0) -> Tên điểm (1) -> Hình ảnh (2) -> Mã (3)
+        const imgIdx = headers.indexOf("Hình ảnh");
+        if (mode === 'num') {
+            // Kiểu đánh số gọn: BỎ cột Hình ảnh
+            if (imgIdx !== -1) {
+                headers.splice(imgIdx, 1);
+                rows.forEach(r => r.splice(imgIdx, 1));
+            }
+        } else if (imgIdx === -1) {
+            headers.splice(2, 0, "Hình ảnh");
+            rows.forEach(r => r.splice(2, 0, ""));
+        } else if (imgIdx !== 2) {
+            const h = headers.splice(imgIdx, 1)[0];
+            headers.splice(2, 0, h);
+            rows.forEach(r => {
+                const v = r.splice(imgIdx, 1)[0];
+                r.splice(2, 0, v !== undefined ? v : "");
+            });
+        }
+
+        // Tự động đổi tên Point ID (cột 0) liên tục từ 1 -> hết
+        rows.forEach((r, i) => {
+            const num = i + 1;
+            const tenDiem = String(r[1] || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
+            if (mode === 'gcp') {
+                let name = prefix + num;
+                if (i === 0) name += "_base";
+                else if ((tenDiem.includes("hieu chinh") || /hi.u ch.nh/.test(tenDiem))) name += "_moc";
+                r[0] = name;
+            } else {
+                r[0] = String(num);
+            }
+        });
+
+        finalHeaders = headers;
+        finalRows = rows;
+        render();
+    }
+
+    function render() {
+        // Vẽ tiêu đề cột
+        document.getElementById('thead').innerHTML = '<tr>' + 
+            finalHeaders.map((h, i) => `<th class="${i<=(document.getElementById('mode').value==='num'?2:3)?'hl':''}">${h}</th>`).join('') + '</tr>';
+
+        // Vẽ các dòng dữ liệu
+        const tbody = document.getElementById('tbody');
+        tbody.innerHTML = finalRows.map((r, rIdx) => {
+            return '<tr>' + finalHeaders.map((_, cIdx) => {
+                const val = r[cIdx] !== undefined ? r[cIdx] : "";
+                if (cIdx === 0) {
+                    return `<td><input class="edit-id" id="id-${rIdx}" value="${val}" oninput="update(${rIdx},0,this.value)"></td>`;
+                } else if (cIdx === 1) {
+                    return `<td><input class="edit-sub" style="width:180px" value="${val}" oninput="update(${rIdx},1,this.value)"></td>`;
+                }
+                return `<td>${val}</td>`;
+            }).join('') + '</tr>';
+        }).join('');
+
+        checkDuplicate();
+    }
+
+    function update(rIdx, cIdx, val) {
+        finalRows[rIdx][cIdx] = val;
+        if (cIdx === 0) checkDuplicate();
+    }
+
+    function checkDuplicate() {
+        const count = {};
+        finalRows.forEach(r => { const v = (r[0]||"").trim(); count[v] = (count[v]||0) + 1; });
+
+        let err = 0;
+        finalRows.forEach((r, i) => {
+            const v = (r[0]||"").trim();
+            const inp = document.getElementById(`id-${i}`);
+            if (!v || count[v] > 1) { inp.classList.add('err'); err++; }
+            else { inp.classList.remove('err'); }
+        });
+
+        const msg = document.getElementById('msg');
+        if (err === 0) {
+            msg.style.color = '#15803d';
+            msg.innerHTML = `✅ Đã xử lý chuẩn ${finalRows.length} điểm (${document.getElementById('mode').value==='num' ? 'Thứ tự cột: Point ID ➔ Tên điểm ➔ Mã ➔ N ➔ E ➔ H... — đã bỏ cột Hình ảnh' : 'Thứ tự cột: Point ID ➔ Tên điểm ➔ Hình ảnh ➔ Mã ➔ N ➔ E ➔ H...'}). Bạn có thể sửa trực tiếp ô màu xanh hoặc bấm Tải File ngay.`;
+        } else {
+            msg.style.color = '#dc2626';
+            msg.innerHTML = `⚠️ Cảnh báo: Có ${err} ô Point ID đang bị trùng tên hoặc để trống (ô tô đỏ)!`;
+        }
+    }
+
+    function exportCSV() {
+        const csv = Papa.unparse({ fields: finalHeaders, data: finalRows });
+        const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = document.getElementById('outName').value.trim() || "ket_qua.csv";
+        a.click();
+    }
+</script>
+</body>
+</html>
