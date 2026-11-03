@@ -4,125 +4,32 @@
     <meta charset="UTF-8">
     <title>Tool Đổi Tên CSV Nhanh Gọn</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
     <style>
-        body {
-            font-family: 'Segoe UI', Tahoma, sans-serif;
-            background: #f1f5f9;
-            margin: 0;
-            padding: 15px;
-            color: #1e293b;
-        }
-        /* Thanh điều khiển gọn trên 1 hàng */
-        .toolbar {
-            background: #ffffff;
-            padding: 14px 18px;
-            border-radius: 8px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-            display: flex;
-            align-items: flex-end;
-            gap: 14px;
-            flex-wrap: wrap;
-            margin-bottom: 12px;
-            border-left: 5px solid #2563eb;
-        }
-        .field {
-            display: flex;
-            flex-direction: column;
-            gap: 4px;
-        }
-        .field label {
-            font-size: 12px;
-            font-weight: 600;
-            color: #475569;
-        }
-        .field input, .field select {
-            padding: 8px 10px;
-            border: 1px solid #cbd5e1;
-            border-radius: 5px;
-            font-size: 13px;
-        }
-        .btn {
-            padding: 9px 18px;
-            border: none;
-            border-radius: 5px;
-            font-weight: 600;
-            font-size: 13px;
-            cursor: pointer;
-            color: #fff;
-            background: #16a34a;
-        }
+        body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #f1f5f9; margin: 0; padding: 15px; color: #1e293b; }
+        .toolbar { background: #fff; padding: 14px 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; border-left: 5px solid #2563eb; }
+        .field { display: flex; flex-direction: column; gap: 4px; }
+        .field label { font-size: 12px; font-weight: 600; color: #475569; }
+        .field input { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; }
+        .btn { padding: 9px 18px; border: none; border-radius: 5px; font-weight: 600; font-size: 13px; cursor: pointer; color: #fff; background: #16a34a; }
         .btn:hover { background: #15803d; }
         .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-
-        /* Bảng dữ liệu chuẩn Excel */
-        .table-wrap {
-            background: #fff;
-            border: 1px solid #cbd5e1;
-            border-radius: 6px;
-            overflow: auto;
-            max-height: 78vh;
-        }
-        table {
-            border-collapse: collapse;
-            font-size: 12px;
-            width: max-content;
-            min-width: 100%;
-        }
-        th {
-            background: #e2e8f0;
-            padding: 8px 10px;
-            border: 1px solid #cbd5e1;
-            position: sticky;
-            top: 0;
-            z-index: 5;
-            text-align: left;
-            white-space: nowrap;
-        }
-        td {
-            padding: 4px 8px;
-            border: 1px solid #e2e8f0;
-            white-space: nowrap;
-        }
+        .table-wrap { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; overflow: auto; max-height: 78vh; }
+        table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
+        th { background: #e2e8f0; padding: 8px 10px; border: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 5; text-align: left; white-space: nowrap; }
+        td { padding: 4px 8px; border: 1px solid #e2e8f0; white-space: nowrap; }
         tr:hover td { background: #f8fafc; }
-        .edit-id {
-            width: 240px;
-            padding: 4px 6px;
-            border: 1px solid #2563eb;
-            border-radius: 3px;
-            font-family: Consolas, monospace;
-            font-weight: 600;
-            color: #1e3a8a;
-            background: #eff6ff;
-        }
-        .edit-id.err {
-            border-color: #dc2626;
-            background: #fee2e2;
-            color: #991b1b;
-        }
-        .edit-sub {
-            width: 120px;
-            padding: 4px 6px;
-            border: 1px solid transparent;
-            background: transparent;
-            font-size: 12px;
-        }
-        .edit-sub:focus {
-            border: 1px solid #2563eb;
-            background: #fff;
-            outline: none;
-        }
+        .edit-id { width: 260px; padding: 4px 6px; border: 1px solid #2563eb; border-radius: 3px; font-family: Consolas, monospace; font-weight: 600; color: #1e3a8a; background: #eff6ff; }
+        .edit-id.err { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
+        .edit-sub { width: 180px; padding: 4px 6px; border: 1px solid transparent; background: transparent; font-size: 12px; }
+        .edit-sub:focus { border: 1px solid #2563eb; background: #fff; outline: none; }
         .hl { background: #fef08a !important; }
-        #msg {
-            font-size: 13px;
-            margin-bottom: 10px;
-            font-weight: 600;
-            color: #15803d;
-        }
+        #msg { font-size: 13px; margin-bottom: 10px; font-weight: 600; color: #15803d; }
     </style>
 </head>
 <body>
 
-    <!-- THANH CÔNG CỤ DUY NHẤT -->
     <div class="toolbar">
         <div class="field">
             <label>1. Chọn file CSV:</label>
@@ -130,43 +37,31 @@
         </div>
 
         <div class="field">
-            <label>2. Kiểu đặt tên Point ID:</label>
-            <select id="mode" onchange="process()">
-                <option value="gcp">Đặt tên GCP (GCP_PQNN_..._diem1_base)</option>
-                <option value="num">Đánh lại số gọn (1, 2, 3... liên tục)</option>
-            </select>
-        </div>
-
-        <div class="field" id="prefixBox">
-            <label>3. Tiền tố (Sửa ngày/khu vực tại đây):</label>
-            <input type="text" id="prefix" value="GCP_PQN_bs261019_C_diem" style="width: 230px;" oninput="process()">
+            <label>2. Tiền tố Point ID (tự nhận từ tên file, có thể sửa):</label>
+            <input type="text" id="prefix" value="GCP_PQNB_bs261030_diem" style="width: 260px;" oninput="process()">
         </div>
 
         <div class="field">
-            <label>4. Tên file xuất ra:</label>
-            <input type="text" id="outName" value="3-ktqn19-10-26.csv" style="width: 170px;">
+            <label>3. Tên file xuất ra:</label>
+            <input type="text" id="outName" value="3-ktqnb30-10-26.xlsx" style="width: 190px;">
         </div>
 
-        <button class="btn" id="btnExport" onclick="exportCSV()" disabled>Tải File CSV</button>
+        <button class="btn" id="btnExport" onclick="exportXLSX()" disabled>Tải File Excel (.xlsx)</button>
+        <button class="btn" id="btnCsv" onclick="exportCSV()" disabled style="background:#64748b">Tải CSV</button>
     </div>
 
     <div id="msg"></div>
     <div id="encNote" style="font-size:12px;color:#475569;margin-bottom:8px;"></div>
 
-    <!-- BẢNG XEM TRƯỚC & SỬA TRỰC TIẾP -->
     <div class="table-wrap">
         <table>
             <thead id="thead">
-                <tr>
-                    <th>Point ID</th><th>Tên điểm</th><th>Hình ảnh</th><th>Mã</th><th>N</th><th>E</th><th>H</th>
-                </tr>
+                <tr><th>Point ID</th><th>Tên điểm</th><th>Hình ảnh</th><th>Mã</th><th>N</th><th>E</th><th>H</th></tr>
             </thead>
             <tbody id="tbody">
-                <tr>
-                    <td colspan="7" style="text-align:center; padding: 40px; color:#64748b;">
-                        📂 Hãy chọn file CSV ở mục số 1 để tự động xử lý...
-                    </td>
-                </tr>
+                <tr><td colspan="7" style="text-align:center; padding: 40px; color:#64748b;">
+                    📂 Hãy chọn file CSV ở mục số 1 để tự động xử lý...
+                </td></tr>
             </tbody>
         </table>
     </div>
@@ -175,10 +70,31 @@
     let rawHeaders = [], rawRows = [];
     let finalHeaders = [], finalRows = [];
 
+    // Tự đoán tiền tố từ tên file. Nhận được các kiểu:
+    //   ktqnd2910_C    -> GCP_PQND_bs261029_C_diem   (ngày-tháng viết liền, có hậu tố _C)
+    //   ktqnb30-10-26  -> GCP_PQNB_bs261030_diem
+    //   ktqn19-10-26   -> GCP_PQN_bs261019_diem
+    //   ktpqn06-10     -> GCP_PQN_bs<năm hiện tại>1006_diem (không có năm thì lấy năm hiện tại)
+    function guessPrefix(fileName) {
+        const name = fileName.toLowerCase().replace(/\.(csv|xlsx)$/, '');
+        const m = name.match(/(?:kt)?p?qn([a-z]?)\s*(?:(\d{1,2})[-_.](\d{1,2})|(\d{2})(\d{2}))(?:[-_.]?(\d{2,4}))?(?:[-_.]([a-z]))?(?![a-z])/);
+        if (!m) return null;
+        const area = 'PQN' + m[1].toUpperCase();
+        const dd = (m[2] || m[4]).padStart(2, '0'), mm = (m[3] || m[5]).padStart(2, '0');
+        const yy = m[6] ? m[6].slice(-2) : String(new Date().getFullYear()).slice(-2);
+        const suffix = m[7] ? '_' + m[7].toUpperCase() : '';
+        return `GCP_${area}_bs${yy}${mm}${dd}${suffix}_diem`;
+    }
+
     document.getElementById('csvFile').addEventListener('change', function(e) {
         const file = e.target.files[0];
         if (!file) return;
-        document.getElementById('outName').value = file.name.startsWith("3-") ? file.name : "3-" + file.name;
+        const base = file.name.replace(/^\d+-/, '');
+        document.getElementById('outName').value = "3-" + base.replace(/\.(csv|xlsx)$/i, "") + ".xlsx";
+        const guess = guessPrefix(file.name);
+        if (guess) document.getElementById('prefix').value = guess;
+        else document.getElementById('prefix').value = '';
+        window._noGuess = !guess;
 
         const reader = new FileReader();
         reader.onload = function() {
@@ -188,50 +104,40 @@
             rawHeaders = res.data[0].map(h => h.replace(/^\uFEFF/, '').trim());
             rawRows = res.data.slice(1);
 
-            // Cảnh báo nếu file gốc đã mất ký tự (dấu ? hoặc  )
             const lost = rawHeaders.filter(h => /[?\uFFFD]/.test(h)).length;
             document.getElementById('encNote').innerHTML =
                 `Mã hóa nhận diện: <b>${enc}</b>` +
+                (window._noGuess ? ` — ⚠️ Không nhận ra khu vực/ngày từ tên file, hãy nhập tiền tố ở mục 2 (vd: GCP_PQN_bs261006_diem).` : '') +
                 (lost ? ` — ⚠️ ${lost} tiêu đề cột trong file gốc đã bị mất dấu (hiện dấu ?). Lỗi này nằm sẵn trong file gốc, hãy xuất lại file gốc ở dạng UTF-8 nếu thiết bị cho phép.` : '');
 
             document.getElementById('btnExport').disabled = false;
+            document.getElementById('btnCsv').disabled = false;
             process();
         };
         reader.readAsArrayBuffer(file);
     });
 
-    // Tự nhận diện mã hóa: UTF-16 -> UTF-8 -> Windows-1258 (tiếng Việt) -> Windows-1252
     function decodeBuffer(buf) {
         const b = new Uint8Array(buf);
         if (b[0] === 0xFF && b[1] === 0xFE) return { text: new TextDecoder('utf-16le').decode(buf), enc: 'UTF-16' };
-        try {
-            return { text: new TextDecoder('utf-8', { fatal: true }).decode(buf), enc: 'UTF-8' };
-        } catch (e) {}
-        try {
-            return { text: new TextDecoder('windows-1258').decode(buf), enc: 'Windows-1258 (ANSI tiếng Việt)' };
-        } catch (e) {
-            return { text: new TextDecoder('windows-1252').decode(buf), enc: 'Windows-1252' };
-        }
+        try { return { text: new TextDecoder('utf-8', { fatal: true }).decode(buf), enc: 'UTF-8' }; } catch (e) {}
+        try { return { text: new TextDecoder('windows-1258').decode(buf), enc: 'Windows-1258 (ANSI tiếng Việt)' }; }
+        catch (e) { return { text: new TextDecoder('windows-1252').decode(buf), enc: 'Windows-1252' }; }
     }
+
+    const isNum = v => /^-?\d+(\.\d+)?$/.test(String(v).trim()) && !/^-?0\d/.test(String(v).trim());
+    function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
     function process() {
         if (!rawRows.length) return;
-        const mode = document.getElementById('mode').value;
         const prefix = document.getElementById('prefix').value.trim();
-        document.getElementById('prefixBox').style.display = (mode === 'gcp') ? 'flex' : 'none';
 
         let headers = [...rawHeaders];
         let rows = rawRows.map(r => [...r]);
 
-        // Tự động chuẩn hóa cột: Point ID (0) -> Tên điểm (1) -> Hình ảnh (2) -> Mã (3)
+        // Chuẩn hóa cột: Point ID (0) -> Tên điểm (1) -> Hình ảnh (2) -> Mã (3) -> N -> E -> H ...
         const imgIdx = headers.indexOf("Hình ảnh");
-        if (mode === 'num') {
-            // Kiểu đánh số gọn: BỎ cột Hình ảnh
-            if (imgIdx !== -1) {
-                headers.splice(imgIdx, 1);
-                rows.forEach(r => r.splice(imgIdx, 1));
-            }
-        } else if (imgIdx === -1) {
+        if (imgIdx === -1) {
             headers.splice(2, 0, "Hình ảnh");
             rows.forEach(r => r.splice(2, 0, ""));
         } else if (imgIdx !== 2) {
@@ -243,18 +149,14 @@
             });
         }
 
-        // Tự động đổi tên Point ID (cột 0) liên tục từ 1 -> hết
+        // Đổi tên Point ID: diem1_base, diem2_moc (dòng "Hiệu chỉnh..."), diem3, diem4, ...
         rows.forEach((r, i) => {
             const num = i + 1;
             const tenDiem = String(r[1] || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
-            if (mode === 'gcp') {
-                let name = prefix + num;
-                if (i === 0) name += "_base";
-                else if ((tenDiem.includes("hieu chinh") || /hi.u ch.nh/.test(tenDiem))) name += "_moc";
-                r[0] = name;
-            } else {
-                r[0] = String(num);
-            }
+            let name = prefix + num;
+            if (i === 0) name += "_base";
+            else if (tenDiem.includes("hieu chinh") || /hi.u ch.nh/.test(tenDiem)) name += "_moc";
+            r[0] = name;
         });
 
         finalHeaders = headers;
@@ -263,21 +165,15 @@
     }
 
     function render() {
-        // Vẽ tiêu đề cột
-        document.getElementById('thead').innerHTML = '<tr>' + 
-            finalHeaders.map((h, i) => `<th class="${i<=(document.getElementById('mode').value==='num'?2:3)?'hl':''}">${h}</th>`).join('') + '</tr>';
+        document.getElementById('thead').innerHTML = '<tr>' +
+            finalHeaders.map((h, i) => `<th class="${i <= 3 ? 'hl' : ''}">${esc(h)}</th>`).join('') + '</tr>';
 
-        // Vẽ các dòng dữ liệu
-        const tbody = document.getElementById('tbody');
-        tbody.innerHTML = finalRows.map((r, rIdx) => {
+        document.getElementById('tbody').innerHTML = finalRows.map((r, rIdx) => {
             return '<tr>' + finalHeaders.map((_, cIdx) => {
                 const val = r[cIdx] !== undefined ? r[cIdx] : "";
-                if (cIdx === 0) {
-                    return `<td><input class="edit-id" id="id-${rIdx}" value="${val}" oninput="update(${rIdx},0,this.value)"></td>`;
-                } else if (cIdx === 1) {
-                    return `<td><input class="edit-sub" style="width:180px" value="${val}" oninput="update(${rIdx},1,this.value)"></td>`;
-                }
-                return `<td>${val}</td>`;
+                if (cIdx === 0) return `<td><input class="edit-id" id="id-${rIdx}" value="${esc(val)}" oninput="update(${rIdx},0,this.value)"></td>`;
+                if (cIdx === 1) return `<td><input class="edit-sub" value="${esc(val)}" oninput="update(${rIdx},1,this.value)"></td>`;
+                return `<td${isNum(val) ? ' style="text-align:right"' : ''}>${esc(val)}</td>`;
             }).join('') + '</tr>';
         }).join('');
 
@@ -291,11 +187,11 @@
 
     function checkDuplicate() {
         const count = {};
-        finalRows.forEach(r => { const v = (r[0]||"").trim(); count[v] = (count[v]||0) + 1; });
+        finalRows.forEach(r => { const v = (r[0] || "").trim(); count[v] = (count[v] || 0) + 1; });
 
         let err = 0;
         finalRows.forEach((r, i) => {
-            const v = (r[0]||"").trim();
+            const v = (r[0] || "").trim();
             const inp = document.getElementById(`id-${i}`);
             if (!v || count[v] > 1) { inp.classList.add('err'); err++; }
             else { inp.classList.remove('err'); }
@@ -304,11 +200,53 @@
         const msg = document.getElementById('msg');
         if (err === 0) {
             msg.style.color = '#15803d';
-            msg.innerHTML = `✅ Đã xử lý chuẩn ${finalRows.length} điểm (${document.getElementById('mode').value==='num' ? 'Thứ tự cột: Point ID ➔ Tên điểm ➔ Mã ➔ N ➔ E ➔ H... — đã bỏ cột Hình ảnh' : 'Thứ tự cột: Point ID ➔ Tên điểm ➔ Hình ảnh ➔ Mã ➔ N ➔ E ➔ H...'}). Bạn có thể sửa trực tiếp ô màu xanh hoặc bấm Tải File ngay.`;
+            msg.innerHTML = `✅ Đã xử lý chuẩn ${finalRows.length} điểm (Thứ tự cột: Point ID ➔ Tên điểm ➔ Hình ảnh ➔ Mã ➔ N ➔ E ➔ H...). Bạn có thể sửa trực tiếp ô màu xanh hoặc bấm Tải File ngay.`;
         } else {
             msg.style.color = '#dc2626';
             msg.innerHTML = `⚠️ Cảnh báo: Có ${err} ô Point ID đang bị trùng tên hoặc để trống (ô tô đỏ)!`;
         }
+    }
+
+
+    // Xuất .xlsx giống file mẫu: font Arial, cột A=28.63, B=25.63, C=50.13, còn lại 13,
+    // dòng dữ liệu cao 300, số căn phải, ngày giờ yyyy-mm-dd h:mm:ss
+    async function exportXLSX() {
+        const wb = new ExcelJS.Workbook();
+        const name = (document.getElementById('outName').value.trim() || "ket_qua").replace(/\.(xlsx|csv)$/i, "");
+        const ws = wb.addWorksheet(name.replace(/^3-/, '1-').slice(0, 31));
+        const font = { name: 'Arial', size: 10 };
+        const dtRe = /^(\d{4})-(\d{2})-(\d{2})[ T](\d{1,2}):(\d{2}):(\d{2})$/;
+
+        ws.addRow(finalHeaders).eachCell(c => { c.font = font; c.alignment = { vertical: 'bottom' }; });
+
+        finalRows.forEach(r => {
+            const vals = finalHeaders.map((_, i) => {
+                const v = r[i] === undefined ? "" : String(r[i]).trim();
+                if (v === "") return null;
+                if (i === 0) return v;                       // Point ID luôn là chữ
+                const d = v.match(dtRe);
+                if (d) return new Date(Date.UTC(+d[1], d[2] - 1, +d[3], +d[4], +d[5], +d[6]));
+                if (isNum(v)) return parseFloat(v);
+                return v;
+            });
+            const row = ws.addRow(vals);
+            row.height = 300;
+            row.eachCell({ includeEmpty: true }, c => {
+                c.font = font;
+                if (typeof c.value === 'number') c.alignment = { horizontal: 'right', vertical: 'bottom' };
+                else if (c.value instanceof Date) { c.numFmt = 'yyyy-mm-dd h:mm:ss'; c.alignment = { horizontal: 'right', vertical: 'bottom' }; }
+                else c.alignment = { vertical: 'bottom' };
+            });
+        });
+
+        finalHeaders.forEach((_, i) => { ws.getColumn(i + 1).width = i === 0 ? 28.63 : i === 1 ? 25.63 : i === 2 ? 50.13 : 13; });
+
+        const buf = await wb.xlsx.writeBuffer();
+        const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+        const a = document.createElement("a");
+        a.href = URL.createObjectURL(blob);
+        a.download = name + ".xlsx";
+        a.click();
     }
 
     function exportCSV() {
@@ -316,7 +254,7 @@
         const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
         const a = document.createElement("a");
         a.href = URL.createObjectURL(blob);
-        a.download = document.getElementById('outName').value.trim() || "ket_qua.csv";
+        a.download = (document.getElementById('outName').value.trim() || "ket_qua").replace(/\.(xlsx|csv)$/i, "") + ".csv";
         a.click();
     }
 </script>
