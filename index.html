@@ -11,21 +11,40 @@
             display: flex; align-items: flex-end; gap: 14px; flex-wrap: wrap; margin-bottom: 12px; border-left: 5px solid #2563eb; }
         .field { display: flex; flex-direction: column; gap: 4px; }
         .field label { font-size: 12px; font-weight: 600; color: #475569; }
-        .field input { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; }
+        .field input, .field select { padding: 8px 10px; border: 1px solid #cbd5e1; border-radius: 5px; font-size: 13px; }
         .btn { padding: 9px 18px; border: none; border-radius: 5px; font-weight: 600; font-size: 13px; cursor: pointer; color: #fff; background: #16a34a; }
         .btn:hover { background: #15803d; }
         .btn:disabled { background: #94a3b8; cursor: not-allowed; }
-        .table-wrap { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; overflow: auto; max-height: 78vh; }
+        .table-wrap { background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; overflow: auto; max-height: 70vh; }
         table { border-collapse: collapse; font-size: 12px; width: max-content; min-width: 100%; }
         th { background: #e2e8f0; padding: 8px 10px; border: 1px solid #cbd5e1; position: sticky; top: 0; z-index: 5; text-align: left; white-space: nowrap; }
         td { padding: 4px 8px; border: 1px solid #e2e8f0; white-space: nowrap; }
         tr:hover td { background: #f8fafc; }
-        .edit-id { width: 260px; padding: 4px 6px; border: 1px solid #2563eb; border-radius: 3px; font-family: Consolas, monospace; font-weight: 600; color: #1e3a8a; background: #eff6ff; }
+        .edit-id { min-width: 200px; padding: 4px 6px; border: 1px solid #2563eb; border-radius: 3px; font-family: Consolas, monospace; font-weight: 600; color: #1e3a8a; background: #eff6ff; }
         .edit-id.err { border-color: #dc2626; background: #fee2e2; color: #991b1b; }
         .edit-sub { width: 180px; padding: 4px 6px; border: 1px solid transparent; background: transparent; font-size: 12px; }
         .edit-sub:focus { border: 1px solid #2563eb; background: #fff; outline: none; }
         .hl { background: #fef08a !important; }
         #msg { font-size: 13px; margin-bottom: 10px; font-weight: 600; color: #15803d; }
+        .imgbox { background: #fff; padding: 12px 18px; border-radius: 8px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-bottom: 12px; border-left: 5px solid #f59e0b; }
+        .imgbox-top { display: flex; gap: 14px; align-items: flex-end; flex-wrap: wrap; }
+        #imgList { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+        .imgcard { border: 1px solid #cbd5e1; border-radius: 6px; padding: 6px; width: 150px; background: #f8fafc; font-size: 12px; }
+        .imgcard img { width: 100%; height: 130px; object-fit: cover; border-radius: 4px; display: block; }
+        .imgcard .nm { margin: 4px 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: #475569; }
+        .imgcard .rg { display: flex; align-items: center; gap: 4px; }
+        .imgcard .rg input { width: 48px; padding: 3px 4px; border: 1px solid #cbd5e1; border-radius: 4px; }
+        .imgcard .rg input.bad { border-color: #dc2626; background: #fee2e2; }
+        .imgcard .rm { margin-left: auto; border: none; background: transparent; color: #dc2626; cursor: pointer; font-size: 15px; }
+        .imgcard .cnt { color: #15803d; margin-top: 3px; }
+        .imgcard .cnt.zero { color: #dc2626; }
+        td.imgcell { cursor: pointer; min-width: 120px; text-align: center; vertical-align: middle; }
+        td.imgcell.active { outline: 3px solid #f59e0b; outline-offset: -3px; background: #fffbeb; }
+        .ph { color: #94a3b8; font-size: 11px; }
+        td.imgcell.active .ph { color: #b45309; font-weight: 600; }
+        .xbtn { border: none; background: #fee2e2; color: #dc2626; cursor: pointer; border-radius: 4px; margin-left: 4px; }
+        .pickbtn { border: 1px solid #cbd5e1; background: #fff; border-radius: 4px; cursor: pointer; margin-left: 4px; font-size: 11px; }
+        .thumb { height: 90px; border-radius: 3px; display: block; }
     </style>
 </head>
 <body>
@@ -50,6 +69,23 @@
         <button class="btn" id="btnCsv" onclick="exportCSV()" disabled style="background:#64748b">Tải CSV</button>
     </div>
 
+    <div class="imgbox">
+        <div class="imgbox-top">
+            <div class="field">
+                <label>4. Ảnh theo khoảng điểm (tuỳ chọn, dùng khi 1 ảnh chụp nhiều điểm):</label>
+                <input type="file" id="imgFiles" accept="image/*" multiple>
+            </div>
+            <div style="font-size:12px;color:#b45309;max-width:520px;">
+                💡 <b>Dán ảnh riêng cho từng dòng:</b> bấm vào ô <b>Hình ảnh</b> của dòng đó trong bảng bên dưới (ô viền cam) rồi nhấn <b>Ctrl+V</b> (ảnh luôn vào đúng ô đã chọn, không tự nhảy sang ô khác; dán lại sẽ thay ảnh cũ). Cũng có thể kéo ảnh thả vào ô, hoặc bấm 📁 để chọn file.<br>
+            </div>
+            <div style="font-size:12px;color:#64748b;max-width:520px;">
+                Mỗi ảnh nhập khoảng <b>Tên điểm</b> mà ảnh đó chụp (đúng như dòng "Ghi chú" trên ảnh, vd <b>4-7</b>).
+                Nếu tên file ảnh có dạng <b>4-7.jpg</b> thì tool tự điền.
+            </div>
+        </div>
+        <div id="imgList"></div>
+    </div>
+
     <div id="msg"></div>
     <div id="encNote" style="font-size:12px;color:#475569;margin-bottom:8px;"></div>
 
@@ -69,12 +105,10 @@
 <script>
     let rawHeaders = [], rawRows = [];
     let finalHeaders = [], finalRows = [];
+    let images = []; // ảnh theo khoảng điểm {name, dataUrl, w, h, from, to}
+    let rowImages = {};   // ảnh theo từng dòng: rowIndex -> {dataUrl, w, h}
+    let activeRow = null; // ô Hình ảnh đang chọn để dán
 
-    // Tự đoán tiền tố từ tên file. Nhận được các kiểu:
-    //   ktqnd2910_C    -> GCP_PQND_bs261029_C_diem   (ngày-tháng viết liền, có hậu tố _C)
-    //   ktqnb30-10-26  -> GCP_PQNB_bs261030_diem
-    //   ktqn19-10-26   -> GCP_PQN_bs261019_diem
-    //   ktpqn06-10     -> GCP_PQN_bs<năm hiện tại>1006_diem (không có năm thì lấy năm hiện tại)
     function guessPrefix(fileName) {
         const name = fileName.toLowerCase().replace(/\.(csv|xlsx)$/, '');
         const m = name.match(/(?:kt)?p?qn([a-z]?)\s*(?:(\d{1,2})[-_.](\d{1,2})|(\d{2})(\d{2}))(?:[-_.]?(\d{2,4}))?(?:[-_.]([a-z]))?(?![a-z])/);
@@ -103,6 +137,7 @@
             if (res.data.length < 2) return alert("File trống!");
             rawHeaders = res.data[0].map(h => h.replace(/^\uFEFF/, '').trim());
             rawRows = res.data.slice(1);
+            rowImages = {}; activeRow = null;
 
             const lost = rawHeaders.filter(h => /[?\uFFFD]/.test(h)).length;
             document.getElementById('encNote').innerHTML =
@@ -128,6 +163,151 @@
     const isNum = v => /^-?\d+(\.\d+)?$/.test(String(v).trim()) && !/^-?0\d/.test(String(v).trim());
     function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;'); }
 
+    // ================= ẢNH =================
+    async function addFiles(files) {
+        files = [...files].filter(f => f.type.startsWith('image/'));
+        for (const f of files) {
+            const img = await loadImage(f);
+            const m = f.name.replace(/\.[^.]+$/, '').match(/^\s*(\d+)\s*(?:[-_]\s*(\d+))?\s*$/);
+            images.push({ name: f.name, ...img, from: m ? +m[1] : '', to: m ? +(m[2] || m[1]) : '' });
+        }
+        images.sort((a, b) => (a.from === '' ? 1e9 : a.from) - (b.from === '' ? 1e9 : b.from));
+        renderImages();
+        render();
+    }
+    document.getElementById('imgFiles').addEventListener('change', async function(e) {
+        await addFiles(e.target.files);
+        e.target.value = '';
+    });
+
+    // Dán ảnh (Ctrl+V): nếu đang chọn một ô Hình ảnh -> dán vào dòng đó (nhiều ảnh thì dán nối các dòng tiếp theo);
+    // nếu không chọn ô nào -> đưa vào danh sách ảnh theo khoảng điểm ở mục 4.
+    let pasteCount = 0;
+    document.addEventListener('paste', async function(e) {
+        const items = [...(e.clipboardData ? e.clipboardData.items : [])].filter(it => it.type.startsWith('image/'));
+        if (!items.length) return;
+        e.preventDefault();
+        const files = items.map(it => {
+            const f = it.getAsFile();
+            return new File([f], 'anh-dan-' + (++pasteCount) + '.png', { type: f.type });
+        });
+        if (activeRow !== null) await setRowImages(activeRow, files);
+        else addFiles(files);
+    });
+
+    // Dán/thả ảnh vào đúng ô đang chọn và GIỮ NGUYÊN ô đó (không tự nhảy sang dòng khác).
+    // Chỉ khi chọn nhiều file cùng lúc (📁 / kéo thả) thì mới xếp lần lượt vào các dòng liên tiếp từ ô đang chọn.
+    async function setRowImages(start, files) {
+        files = [...files].filter(f => f.type.startsWith('image/'));
+        let r = start;
+        for (const f of files) {
+            if (r >= finalRows.length) break;
+            rowImages[r++] = await loadImage(f);
+        }
+        activeRow = start;
+        render();
+    }
+    function setActive(r) {
+        activeRow = r;
+        document.querySelectorAll('td.imgcell').forEach(td => td.classList.toggle('active', td.id === 'ic-' + r));
+        render();
+    }
+    function clearRowImg(r, ev) { ev.stopPropagation(); delete rowImages[r]; render(); }
+    function dropRow(ev, r) {
+        ev.preventDefault(); ev.stopPropagation();
+        setRowImages(r, ev.dataTransfer.files);
+    }
+    function pickRow(r, ev) {
+        ev.stopPropagation();
+        const inp = document.createElement('input');
+        inp.type = 'file'; inp.accept = 'image/*'; inp.multiple = true;
+        inp.onchange = () => setRowImages(r, inp.files);
+        inp.click();
+    }
+    // bấm ra ngoài cột Hình ảnh -> bỏ chọn ô
+    document.addEventListener('click', function(e) {
+        if (activeRow !== null && !e.target.closest('td.imgcell')) {
+            activeRow = null;
+            document.querySelectorAll('td.imgcell.active').forEach(td => td.classList.remove('active'));
+            const ph = document.querySelectorAll('td.imgcell .ph'); ph.forEach(x => x.textContent = '＋ bấm để chọn ô');
+        }
+    });
+
+    // Kéo thả ảnh vào khung mục 4
+    const box = document.querySelector('.imgbox');
+    box.addEventListener('dragover', e => { e.preventDefault(); box.style.background = '#fffbeb'; });
+    box.addEventListener('dragleave', () => { box.style.background = '#fff'; });
+    box.addEventListener('drop', e => { e.preventDefault(); box.style.background = '#fff'; addFiles(e.dataTransfer.files); });
+
+    // Thu nhỏ ảnh (cạnh dài tối đa 1000px) để file Excel không quá nặng
+    function loadImage(file) {
+        return new Promise(resolve => {
+            const url = URL.createObjectURL(file);
+            const im = new Image();
+            im.onload = () => {
+                const k = Math.min(1, 1536 / Math.max(im.naturalWidth, im.naturalHeight));
+                const w = Math.round(im.naturalWidth * k), h = Math.round(im.naturalHeight * k);
+                const c = document.createElement('canvas'); c.width = w; c.height = h;
+                c.getContext('2d').drawImage(im, 0, 0, w, h);
+                URL.revokeObjectURL(url);
+                resolve({ dataUrl: c.toDataURL('image/jpeg', 0.85), w, h });
+            };
+            im.src = url;
+        });
+    }
+
+    // Tìm các dòng có Tên điểm là số nằm trong [from, to]
+    function rowsOf(img) {
+        const out = [];
+        if (img.from === '' || img.to === '') return out;
+        finalRows.forEach((r, i) => {
+            const s = String(r[1] || '').trim();
+            if (/^\d+$/.test(s) && +s >= img.from && +s <= img.to) out.push(i);
+        });
+        return out;
+    }
+
+    function renderImages() {
+        document.getElementById('imgList').innerHTML = images.map((im, i) => {
+            const bad = im.from === '' || im.to === '' || +im.from > +im.to;
+            const n = rowsOf(im).length;
+            return `<div class="imgcard">
+                <img src="${im.dataUrl}">
+                <div class="nm" title="${esc(im.name)}">${esc(im.name)}</div>
+                <div class="rg">
+                    <input class="${bad ? 'bad' : ''}" type="number" value="${im.from}" placeholder="từ" oninput="setRange(${i},'from',this.value)">
+                    <span>–</span>
+                    <input class="${bad ? 'bad' : ''}" type="number" value="${im.to}" placeholder="đến" oninput="setRange(${i},'to',this.value)">
+                    <button class="rm" title="Xóa ảnh" onclick="removeImg(${i})">✕</button>
+                </div>
+                <div class="cnt ${n ? '' : 'zero'}" id="cnt-${i}">${finalRows.length ? (n ? `→ khớp ${n} điểm` : '→ chưa khớp điểm nào') : ''}</div>
+            </div>`;
+        }).join('');
+    }
+
+    function setRange(i, key, v) {
+        images[i][key] = v === '' ? '' : +v;
+        if (key === 'from' && images[i].to === '') images[i].to = images[i].from;
+        const im = images[i], n = rowsOf(im).length;
+        const c = document.getElementById('cnt-' + i);
+        if (c) { c.textContent = finalRows.length ? (n ? `→ khớp ${n} điểm` : '→ chưa khớp điểm nào') : ''; c.className = 'cnt ' + (n ? '' : 'zero'); }
+        render();
+    }
+    function removeImg(i) { images.splice(i, 1); renderImages(); render(); }
+
+    // Nhóm: mỗi ảnh -> danh sách dòng. Ảnh sau đè ảnh trước nếu trùng điểm.
+    function imageGroups() {
+        const taken = new Set(Object.keys(rowImages).map(Number)), groups = [];
+        images.forEach(im => {
+            const rows = rowsOf(im).filter(r => !taken.has(r));
+            rows.forEach(r => taken.add(r));
+            if (rows.length) groups.push({ img: im, rows });
+        });
+        return groups;
+    }
+    const contiguous = rows => rows.every((r, i) => i === 0 || r === rows[i - 1] + 1);
+
+    // ================= XỬ LÝ =================
     function process() {
         if (!rawRows.length) return;
         const prefix = document.getElementById('prefix').value.trim();
@@ -135,7 +315,6 @@
         let headers = [...rawHeaders];
         let rows = rawRows.map(r => [...r]);
 
-        // Chuẩn hóa cột: Point ID (0) -> Tên điểm (1) -> Hình ảnh (2) -> Mã (3) -> N -> E -> H ...
         const imgIdx = headers.indexOf("Hình ảnh");
         if (imgIdx === -1) {
             headers.splice(2, 0, "Hình ảnh");
@@ -149,7 +328,6 @@
             });
         }
 
-        // Đổi tên Point ID: diem1_base, diem2_moc (dòng "Hiệu chỉnh..."), diem3, diem4, ...
         rows.forEach((r, i) => {
             const num = i + 1;
             const tenDiem = String(r[1] || "").toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/đ/g, 'd');
@@ -161,6 +339,7 @@
 
         finalHeaders = headers;
         finalRows = rows;
+        renderImages();
         render();
     }
 
@@ -168,11 +347,29 @@
         document.getElementById('thead').innerHTML = '<tr>' +
             finalHeaders.map((h, i) => `<th class="${i <= 3 ? 'hl' : ''}">${esc(h)}</th>`).join('') + '</tr>';
 
+        // dòng đầu của mỗi nhóm ảnh -> hiện thumbnail xem trước
+        const firstRow = {}, inGroup = {};
+        imageGroups().forEach(g => { firstRow[g.rows[0]] = g; g.rows.forEach(r => inGroup[r] = g); });
+        const mode = 'all';
+
+        const idCh = Math.max(20, ...finalRows.map(r => String(r[0] || '').length)) + 3;   // vừa với ID dài nhất
         document.getElementById('tbody').innerHTML = finalRows.map((r, rIdx) => {
             return '<tr>' + finalHeaders.map((_, cIdx) => {
                 const val = r[cIdx] !== undefined ? r[cIdx] : "";
-                if (cIdx === 0) return `<td><input class="edit-id" id="id-${rIdx}" value="${esc(val)}" oninput="update(${rIdx},0,this.value)"></td>`;
+                if (cIdx === 0) return `<td><input class="edit-id" style="width:${idCh}ch" id="id-${rIdx}" value="${esc(val)}" oninput="update(${rIdx},0,this.value)"></td>`;
                 if (cIdx === 1) return `<td><input class="edit-sub" value="${esc(val)}" oninput="update(${rIdx},1,this.value)"></td>`;
+                if (cIdx === 2) {
+                    const act = activeRow === rIdx ? ' active' : '';
+                    const attrs = `class="imgcell${act}" id="ic-${rIdx}" onclick="setActive(${rIdx})" ondragover="event.preventDefault()" ondrop="dropRow(event,${rIdx})"`;
+                    if (rowImages[rIdx])
+                        return `<td ${attrs}><img class="thumb" src="${rowImages[rIdx].dataUrl}"><button class="xbtn" title="Xóa ảnh" onclick="clearRowImg(${rIdx},event)">✕</button></td>`;
+                    const g = inGroup[rIdx];
+                    if (g) {
+                        if (mode === 'all' || firstRow[rIdx]) return `<td ${attrs}><img class="thumb" src="${g.img.dataUrl}"></td>`;
+                        return `<td ${attrs}><span class="ph">↑ ảnh ${g.img.from}-${g.img.to}</span></td>`;
+                    }
+                    return `<td ${attrs}><span class="ph">${act ? 'Ctrl+V để dán ảnh' : '＋ bấm để chọn ô'}</span><button class="pickbtn" title="Chọn file ảnh" onclick="pickRow(${rIdx},event)">📁</button></td>`;
+                }
                 return `<td${isNum(val) ? ' style="text-align:right"' : ''}>${esc(val)}</td>`;
             }).join('') + '</tr>';
         }).join('');
@@ -183,6 +380,7 @@
     function update(rIdx, cIdx, val) {
         finalRows[rIdx][cIdx] = val;
         if (cIdx === 0) checkDuplicate();
+        if (cIdx === 1) { renderImages(); }
     }
 
     function checkDuplicate() {
@@ -193,23 +391,23 @@
         finalRows.forEach((r, i) => {
             const v = (r[0] || "").trim();
             const inp = document.getElementById(`id-${i}`);
+            if (!inp) return;
             if (!v || count[v] > 1) { inp.classList.add('err'); err++; }
             else { inp.classList.remove('err'); }
         });
 
+        const nImg = imageGroups().length, nRow = Object.keys(rowImages).length;
         const msg = document.getElementById('msg');
         if (err === 0) {
             msg.style.color = '#15803d';
-            msg.innerHTML = `✅ Đã xử lý chuẩn ${finalRows.length} điểm (Thứ tự cột: Point ID ➔ Tên điểm ➔ Hình ảnh ➔ Mã ➔ N ➔ E ➔ H...). Bạn có thể sửa trực tiếp ô màu xanh hoặc bấm Tải File ngay.`;
+            msg.innerHTML = `✅ Đã xử lý chuẩn ${finalRows.length} điểm` + (nRow ? `, ${nRow} dòng đã có ảnh riêng` : '') + (nImg ? `, ghép ${nImg}/${images.length} ảnh theo khoảng điểm` : '') + `. Bạn có thể sửa trực tiếp ô màu xanh hoặc bấm Tải File ngay.`;
         } else {
             msg.style.color = '#dc2626';
             msg.innerHTML = `⚠️ Cảnh báo: Có ${err} ô Point ID đang bị trùng tên hoặc để trống (ô tô đỏ)!`;
         }
     }
 
-
-    // Xuất .xlsx giống file mẫu: font Arial, cột A=28.63, B=25.63, C=50.13, còn lại 13,
-    // dòng dữ liệu cao 300, số căn phải, ngày giờ yyyy-mm-dd h:mm:ss
+    // Xuất .xlsx: font Arial, cột A=28.63, B=25.63, C=50.13, còn lại 13, dòng dữ liệu cao 300pt
     async function exportXLSX() {
         const wb = new ExcelJS.Workbook();
         const name = (document.getElementById('outName').value.trim() || "ket_qua").replace(/\.(xlsx|csv)$/i, "");
@@ -223,7 +421,7 @@
             const vals = finalHeaders.map((_, i) => {
                 const v = r[i] === undefined ? "" : String(r[i]).trim();
                 if (v === "") return null;
-                if (i === 0) return v;                       // Point ID luôn là chữ
+                if (i === 0) return v;
                 const d = v.match(dtRe);
                 if (d) return new Date(Date.UTC(+d[1], d[2] - 1, +d[3], +d[4], +d[5], +d[6]));
                 if (isNum(v)) return parseFloat(v);
@@ -239,7 +437,35 @@
             });
         });
 
-        finalHeaders.forEach((_, i) => { ws.getColumn(i + 1).width = i === 0 ? 28.63 : i === 1 ? 25.63 : i === 2 ? 50.13 : 13; });
+        const maxId = Math.max(0, ...finalRows.map(r => String(r[0] || '').length));
+        const widthA = Math.max(28.63, Math.round((maxId + 2.4) * 100) / 100);   // vừa khít ID dài nhất (29 ký tự -> 31.4)
+        finalHeaders.forEach((_, i) => { ws.getColumn(i + 1).width = i === 0 ? widthA : i === 1 ? 25.63 : i === 2 ? 50.13 : 13; });
+
+        // ---- Chèn ảnh vào cột C giống file mẫu: mỗi dòng 1 ảnh, neo góc trên-trái ô (lệch 0),
+        //      kích thước tối đa 300x400px (= đúng chiều cao dòng 300pt), giữ tỉ lệ ----
+        const BOX_W = 300, BOX_H = 400;
+        const cImgIdx = finalHeaders.indexOf("Hình ảnh");
+
+        function placeAtRow(mediaId, im, r) {
+            const k = Math.min(BOX_W / im.w, BOX_H / im.h);
+            ws.addImage(mediaId, {
+                tl: { nativeCol: cImgIdx, nativeColOff: 0, nativeRow: r + 1, nativeRowOff: 0 },
+                ext: { width: Math.round(im.w * k), height: Math.round(im.h * k) },
+                editAs: 'oneCell'
+            });
+        }
+
+        // ảnh riêng từng dòng
+        Object.keys(rowImages).forEach(k => {
+            const im = rowImages[k];
+            placeAtRow(wb.addImage({ base64: im.dataUrl, extension: 'jpeg' }), im, +k);
+        });
+
+        // ảnh theo khoảng điểm: chèn bản sao vào TỪNG dòng trong khoảng (không gộp ô)
+        imageGroups().forEach(g => {
+            const id = wb.addImage({ base64: g.img.dataUrl, extension: 'jpeg' });
+            g.rows.forEach(r => placeAtRow(id, g.img, r));
+        });
 
         const buf = await wb.xlsx.writeBuffer();
         const blob = new Blob([buf], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
