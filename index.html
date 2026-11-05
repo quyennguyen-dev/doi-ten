@@ -69,6 +69,23 @@
         <button class="btn" id="btnCsv" onclick="exportCSV()" disabled style="background:#64748b">Tải CSV</button>
     </div>
 
+
+    <!-- ================= SỬA FILE KML ================= -->
+    <div class="toolbar" style="border-left-color:#0d9488; align-items:flex-end;">
+        <div class="field">
+            <label>5. Chọn file KML bị lỗi:</label>
+            <input type="file" id="kmlFile" accept=".kml,.xml,application/vnd.google-earth.kml+xml">
+        </div>
+        <button class="btn" id="btnFixKml" onclick="fixKmlFile()" disabled style="background:#0d9488">
+            Sửa và tải KML
+        </button>
+        <div style="font-size:12px;color:#475569;max-width:560px;">
+            Tự kiểm tra XML, bổ sung namespace KML/XSI còn thiếu, kiểm tra cấu trúc và tọa độ,
+            sau đó xuất một file KML mới. File gốc không bị thay đổi.
+        </div>
+        <div id="kmlMsg" style="width:100%;font-size:13px;font-weight:600;"></div>
+    </div>
+
     <div class="imgbox">
         <div class="imgbox-top">
             <div class="field">
@@ -111,9 +128,12 @@
 
     function guessPrefix(fileName) {
         const name = fileName.toLowerCase().replace(/\.(csv|xlsx)$/, '');
-        const m = name.match(/(?:kt)?p?qn([a-z]?)\s*(?:(\d{1,2})[-_.](\d{1,2})|(\d{2})(\d{2}))(?:[-_.]?(\d{2,4}))?(?:[-_.]([a-z]))?(?![a-z])/);
+        // Khu vực: qn / pqn / qnb ... hoặc xvc (vd: ktxvc0511_C, xvc-05-11)
+        const m = name.match(/(?:kt)?(p?qn[a-z]?|x?vc)\s*[-_.]?\s*(?:(\d{1,2})[-_.](\d{1,2})|(\d{2})(\d{2}))(?:[-_.]?(\d{2,4}))?(?:[-_.]([a-z]))?(?![a-z])/);
         if (!m) return null;
-        const area = 'PQN' + m[1].toUpperCase();
+        let area = m[1].toUpperCase();
+        if (area.startsWith('QN')) area = 'P' + area;
+        if (area === 'VC') area = 'XVC';
         const dd = (m[2] || m[4]).padStart(2, '0'), mm = (m[3] || m[5]).padStart(2, '0');
         const yy = m[6] ? m[6].slice(-2) : String(new Date().getFullYear()).slice(-2);
         const suffix = m[7] ? '_' + m[7].toUpperCase() : '';
@@ -483,6 +503,99 @@
         a.download = (document.getElementById('outName').value.trim() || "ket_qua").replace(/\.(xlsx|csv)$/i, "") + ".csv";
         a.click();
     }
+
+    // ================= SỬA FILE KML =================
+    let selectedKmlFile = null;
+    const kmlInput = document.getElementById('kmlFile');
+    kmlInput.addEventListener('change', function (e) {
+        selectedKmlFile = e.target.files && e.target.files[0] ? e.target.files[0] : null;
+        document.getElementById('btnFixKml').disabled = !selectedKmlFile;
+        const msg = document.getElementById('kmlMsg');
+        msg.style.color = '#475569';
+        msg.textContent = selectedKmlFile
+            ? `Đã chọn: ${selectedKmlFile.name} (${(selectedKmlFile.size / 1024).toFixed(1)} KB). Nhấn “Sửa và tải KML”.`
+            : '';
+    });
+
+    function kmlLocalName(node) {
+        return (node && (node.localName || node.nodeName.split(':').pop()) || '').toLowerCase();
+    }
+
+    function fixKmlText(text) {
+        let s = String(text).replace(/^\uFEFF/, '').trim();
+
+        // Bổ sung namespace xsi nếu file có dùng tiền tố xsi nhưng chưa khai báo.
+        if (/\bxsi:[A-Za-z_][\w.-]*/.test(s) && !/\bxmlns:xsi\s*=/.test(s)) {
+            const m = s.match(/<((?:[\w.-]+:)?kml)\b([^>]*)>/i);
+            if (m) s = s.replace(m[0], m[0].replace(/\s*\/?>$/, ' xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"$&'));
+        }
+
+        // Bổ sung namespace KML mặc định nếu thẻ gốc chưa khai báo namespace nào.
+        const rootMatch = s.match(/<((?:[\w.-]+:)?kml)\b([^>]*)>/i);
+        if (rootMatch && !/\bxmlns(?:\s*:\s*[\w.-]+)?\s*=/.test(rootMatch[2])) {
+            s = s.replace(rootMatch[0], rootMatch[0].replace(/\s*\/?>$/, ' xmlns="http://www.opengis.net/kml/2.2"$&'));
+        }
+
+        const doc = new DOMParser().parseFromString(s, 'application/xml');
+        const parseError = doc.getElementsByTagName('parsererror')[0];
+        if (parseError) throw new Error('XML không hợp lệ: ' + parseError.textContent.replace(/\s+/g, ' ').trim());
+
+        const root = doc.documentElement;
+        if (!root || kmlLocalName(root) !== 'kml') throw new Error('Không tìm thấy thẻ gốc <kml>.');
+
+        const all = [...doc.getElementsByTagName('*')];
+        const placemarks = all.filter(n => kmlLocalName(n) === 'placemark');
+        const coordNodes = all.filter(n => kmlLocalName(n) === 'coordinates');
+        let coordinateCount = 0, badCoordinateCount = 0;
+
+        coordNodes.forEach(node => {
+            (node.textContent || '').trim().split(/\s+/).filter(Boolean).forEach(token => {
+                coordinateCount++;
+                const p = token.split(',');
+                const v = p.map(Number);
+                if ((p.length !== 2 && p.length !== 3) || v.some(n => !Number.isFinite(n)) ||
+                    v[0] < -180 || v[0] > 180 || v[1] < -90 || v[1] > 90) badCoordinateCount++;
+            });
+        });
+
+        let output = new XMLSerializer().serializeToString(doc);
+        if (!/^<\?xml\b/i.test(output)) output = '<?xml version="1.0" encoding="UTF-8"?>\n' + output;
+        return { output, placemarks: placemarks.length, coordinateCount, badCoordinateCount };
+    }
+
+    async function fixKmlFile() {
+        if (!selectedKmlFile) return;
+        const msg = document.getElementById('kmlMsg');
+        const btn = document.getElementById('btnFixKml');
+        btn.disabled = true;
+        msg.style.color = '#475569';
+        msg.textContent = 'Đang kiểm tra và sửa file KML...';
+        try {
+            const result = fixKmlText(await selectedKmlFile.text());
+            const blob = new Blob([result.output], { type: 'application/vnd.google-earth.kml+xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = selectedKmlFile.name.replace(/\.kml$/i, '') + '_fixed.kml';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            setTimeout(() => URL.revokeObjectURL(url), 1500);
+            msg.style.color = result.badCoordinateCount ? '#b45309' : '#15803d';
+            msg.textContent = `Đã xuất file: ${result.placemarks} Placemark, ${result.coordinateCount} tọa độ.`
+                + (result.badCoordinateCount
+                    ? ` Cảnh báo: ${result.badCoordinateCount} bộ tọa độ cần kiểm tra; công cụ không tự đoán giá trị.`
+                    : ' Không phát hiện tọa độ sai định dạng.');
+        } catch (err) {
+            msg.style.color = '#dc2626';
+            msg.textContent = 'Không thể tự sửa an toàn: ' + (err && err.message ? err.message : String(err))
+                + ' — file gốc được giữ nguyên.';
+        } finally {
+            btn.disabled = !selectedKmlFile;
+        }
+    }
+
+
 </script>
 </body>
 </html>
